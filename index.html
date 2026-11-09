@@ -8,21 +8,25 @@ for(let c=1;c<=12;c++){let opt=document.createElement('option');opt.value=c;opt.
 function filter(){const chapter=$('chapter').value,search=$('search').value.trim().toLowerCase();pool=DATA.filter(x=>(chapter==='all'||String(x.chapter)===chapter)&&(!search||String(x.no)===search||[x.question,x.answer,x.topic].join(' ').toLowerCase().includes(search))&&(mode==='all'||(mode==='unseen'&&!state.grades[x.no])||(mode==='wrong'&&state.grades[x.no]==='wrong')||(mode==='star'&&state.stars[x.no])));if($('order').value==='random'){for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}}else pool.sort((a,b)=>a.no-b.no);idx=0;render()}
 // Every numbered blank is independently tappable. Repeated references share their answer but not their visibility.
 function inlineFill(question,answer){
- const answers={};const labels=[...answer.matchAll(/\(\s*(\d+)\s*\)/g)];
+ const answers={};
+ const labels=[...answer.matchAll(/[（(]\s*([0-9０-９]+)\s*[）)]/g)];
+ const normal=n=>String(n).replace(/[０-９]/g,c=>String(c.charCodeAt(0)-65296));
  for(let i=0;i<labels.length;i++){
   const from=labels[i].index+labels[i][0].length,to=i+1<labels.length?labels[i+1].index:answer.length;
-  answers[labels[i][1]]=answer.slice(from,to).trim().replace(/\s*\n\s*/g,'').replace(/[,、]\s*$/,'');
+  answers[normal(labels[i][1])]=answer.slice(from,to).trim().replace(/\s*\n\s*/g,'').replace(/[,、]\s*$/,'');
  }
  const escape=x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
- const blank=/(\(\s*(\d+)\s*\))([ \t]*_{2,}|[ \t]*＿{2,})/g;
- let count=0,missing=false,last=0,html='';
+ // Fullwidth parentheses, line breaks, underscore blanks and whitespace-only blanks.
+ const blank=/([（(]\s*([0-9０-９]+)\s*[）)])((?:[ \t\r\n]*[_＿]{2,})|(?:[ \t]{2,}(?=\S)))/g;
+ let count=0,last=0,html='';
  for(const m of question.matchAll(blank)){
-  const value=answers[m[2]];
-  if(!value){missing=true;continue;}
-  html+=escape(question.slice(last,m.index))+escape(m[1])+'<button type="button" class="tap-blank" aria-label="空欄 '+m[2]+' の答えを表示" aria-pressed="false" data-answer="'+escape(value)+'" data-blank="'+escape(m[0].slice(m[1].length))+'">'+escape(m[0].slice(m[1].length))+'</button>';
+  const value=answers[normal(m[2])];
+  if(!value)continue;
+  const raw=m[3],placeholder=/[_＿]/.test(raw)?raw:'________';
+  html+=escape(question.slice(last,m.index))+escape(m[1])+'<button type="button" class="tap-blank" aria-label="空欄 '+normal(m[2])+' の答えを表示" aria-pressed="false" data-answer="'+escape(value)+'" data-blank="'+escape(placeholder)+'">'+escape(placeholder)+'</button>';
   last=m.index+m[0].length;count++;
  }
- html+=escape(question.slice(last));return {html,ok:count>0&&!missing};
+ html+=escape(question.slice(last));return {html,ok:count>0};
 }
 function toggleBlank(button,show){
  const reveal=show===undefined?!button.classList.contains('revealed'):show;

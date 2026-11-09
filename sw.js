@@ -1,4 +1,4 @@
-const CACHE = 'kkt-accounting-v4';
+const CACHE = 'kkt-accounting-v5';
 const APP = self.registration.scope;
 const ASSETS = [APP, APP+'index.html', APP+'manifest.webmanifest', APP+'icon-192.png', APP+'icon-512.png'];
 self.addEventListener('install', event => {
